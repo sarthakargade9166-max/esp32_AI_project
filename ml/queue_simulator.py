@@ -4,72 +4,50 @@ import random
 import time
 from datetime import datetime
 
-# Simulation Mode Configuration:
-# - "realtime"    : Simulates real ESP32 hardware pace for live demonstrations.
-# - "accelerated" : Fast event generation (0.01 - 0.05s delay) for dataset generation and ML training.
-SIMULATION_MODE = "realtime"
+# Simulation mode: 'realtime' for demo, 'accelerated' for fast training data creation
+SIMULATION_MODE = 'realtime'
 
-# Storage configuration
-CSV_PATH = os.path.join(os.path.dirname(__file__), 'queue_data.csv')
+# Path to dataset file
+csv_path = os.path.join(os.path.dirname(__file__), 'queue_data.csv')
 
-# Traffic level parameters (probabilities and real-time delay ranges in seconds)
-TRAFFIC_CONFIG = {
-    'heavy': {'enter_probability': 0.80, 'delay': (1, 2)},
-    'moderate': {'enter_probability': 0.70, 'delay': (2, 4)},
-    'low': {'enter_probability': 0.60, 'delay': (4, 7)},
-    'decreasing': {'enter_probability': 0.40, 'delay': (3, 6)},
-    'off_peak': {'enter_probability': 0.55, 'delay': (5, 8)}
+# Traffic configuration (arrival chance and delay in seconds)
+traffic_config = {
+    'heavy': {'enter_chance': 0.80, 'delay': (1, 2)},
+    'moderate': {'enter_chance': 0.70, 'delay': (2, 4)},
+    'low': {'enter_chance': 0.60, 'delay': (4, 7)},
+    'decreasing': {'enter_chance': 0.40, 'delay': (3, 6)},
+    'off_peak': {'enter_chance': 0.55, 'delay': (5, 8)}
 }
 
-# Delay range for accelerated mode (seconds)
-ACCELERATED_DELAY = (0.01, 0.05)
-
-# Occupancy thresholds
-LOW_OCCUPANCY_THRESHOLD = 15
-HIGH_OCCUPANCY_THRESHOLD = 35
-MIN_ENTER_CHANCE_LOW_OCC = 0.65
-HIGH_OCCUPANCY_PENALTY = 0.25
+# Fast delay for accelerated mode (in seconds)
+accelerated_delay = (0.01, 0.05)
 
 
-def load_initial_state(filepath=CSV_PATH):
-    """
-    Reads existing CSV file to restore event_id and calculate current occupancy.
-
-    Returns:
-        tuple: (next_event_id, current_occupancy)
-    """
-    if not os.path.isfile(filepath) or os.path.getsize(filepath) == 0:
+# Read existing CSV file to restore event_id and current people_inside
+def load_previous_state():
+    if not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0:
         return 1, 0
 
-    last_event_id = 0
-    occupancy = 0
+    last_id = 0
+    people_inside = 0
 
-    with open(filepath, mode='r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
+    with open(csv_path, mode='r') as file:
+        reader = csv.DictReader(file)
         for row in reader:
-            try:
-                event_id_val = int(row.get('event_id', 0))
-                if event_id_val > last_event_id:
-                    last_event_id = event_id_val
-            except ValueError:
-                pass
+            if 'event_id' in row and row['event_id'].isdigit():
+                last_id = max(last_id, int(row['event_id']))
 
-            event_type = row.get('event_type', '').strip().upper()
+            event_type = row.get('event_type', '').upper()
             if event_type == 'ENTER':
-                occupancy += 1
+                people_inside += 1
             elif event_type == 'EXIT':
-                occupancy = max(0, occupancy - 1)
+                people_inside = max(0, people_inside - 1)
 
-    return last_event_id + 1, occupancy
+    return last_id + 1, people_inside
 
 
-def get_current_traffic_level():
-    """
-    Determines traffic category based on current hour of the day.
-
-    Returns:
-        str: Key in TRAFFIC_CONFIG ('heavy', 'moderate', 'low', 'decreasing', 'off_peak')
-    """
+# Check traffic level based on hour of the day
+def get_traffic_level():
     hour = datetime.now().hour
 
     if 8 <= hour < 9:
@@ -88,126 +66,92 @@ def get_current_traffic_level():
         return 'off_peak'
 
 
-def generate_event(occupancy):
-    """
-    Generates a raw ENTER or EXIT event based on traffic configuration and occupancy.
+# Generate an ENTER or EXIT event based on traffic and people inside
+def generate_event(people_inside):
+    traffic = get_traffic_level()
+    base_chance = traffic_config[traffic]['enter_chance']
 
-    Args:
-        occupancy (int): Current count of people inside.
-
-    Returns:
-        tuple: (event_type, updated_occupancy, traffic_level)
-    """
-    traffic = get_current_traffic_level()
-    config = TRAFFIC_CONFIG[traffic]
-    base_enter = config['enter_probability']
-
-    if occupancy <= 0:
+    # Nobody inside, so next person must enter
+    if people_inside <= 0:
         event_type = 'ENTER'
     else:
-        if occupancy < LOW_OCCUPANCY_THRESHOLD:
-            enter_chance = max(base_enter, MIN_ENTER_CHANCE_LOW_OCC)
-        elif occupancy < HIGH_OCCUPANCY_THRESHOLD:
-            enter_chance = base_enter
+        if people_inside < 15:
+            enter_chance = max(base_chance, 0.65)
+        elif people_inside < 35:
+            enter_chance = base_chance
         else:
-            enter_chance = max(0.1, base_enter - HIGH_OCCUPANCY_PENALTY)
+            enter_chance = max(0.1, base_chance - 0.25)
 
         if random.random() < enter_chance:
             event_type = 'ENTER'
         else:
             event_type = 'EXIT'
 
+    # Update count of people inside
     if event_type == 'ENTER':
-        occupancy += 1
+        people_inside += 1
     else:
-        occupancy = max(0, occupancy - 1)
+        people_inside = max(0, people_inside - 1)
 
-    return event_type, occupancy, traffic
+    return event_type, people_inside, traffic
 
 
-def calculate_event_delay(traffic, mode=SIMULATION_MODE):
-    """
-    Calculates sleep delay based on active SIMULATION_MODE and traffic level.
-
-    Modes:
-    - 'realtime'    : Uses traffic-specific realistic delay ranges (1-8s).
-    - 'accelerated' : Uses fast delay range (0.01-0.05s) for bulk data generation.
-
-    Args:
-        traffic (str): Current traffic level key.
-        mode (str): Active simulation mode name.
-
-    Returns:
-        float: Delay time in seconds.
-    """
-    if mode == "accelerated":
-        min_d, max_d = ACCELERATED_DELAY
+# Calculate sleep delay based on mode and traffic
+def get_event_delay(traffic):
+    if SIMULATION_MODE == 'accelerated':
+        min_delay, max_delay = accelerated_delay
     else:
-        min_d, max_d = TRAFFIC_CONFIG[traffic]['delay']
+        min_delay, max_delay = traffic_config[traffic]['delay']
 
-    return random.uniform(min_d, max_d)
+    return random.uniform(min_delay, max_delay)
 
 
-def write_event(event_id, timestamp, event_type, filepath=CSV_PATH):
-    """
-    Appends a single event record to storage.
+# Save a single event to CSV (can be swapped with Supabase database later)
+def write_event(event_id, timestamp, event_type):
+    file_exists = os.path.exists(csv_path)
 
-    NOTE: Replacing CSV with Supabase later requires modifying ONLY this function.
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
 
-    Args:
-        event_id (int): Incremental unique ID for the event.
-        timestamp (str): Full datetime string.
-        event_type (str): 'ENTER' or 'EXIT'.
-        filepath (str): Destination CSV path.
-    """
-    file_exists = os.path.isfile(filepath)
-    is_empty = not file_exists or os.path.getsize(filepath) == 0
-
-    with open(filepath, mode='a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        if is_empty:
+        # Write header if file is new
+        if not file_exists or os.path.getsize(csv_path) == 0:
             writer.writerow(['event_id', 'timestamp', 'event_type'])
+
         writer.writerow([event_id, timestamp, event_type])
 
 
+# Run the main simulator loop
 def run_simulator():
-    """
-    Main loop running hardware simulator with dynamic delays based on SIMULATION_MODE.
-    """
-    event_id, occupancy = load_initial_state()
+    event_id, people_inside = load_previous_state()
 
-    print("==========================================")
-    print("      Queue Hardware Simulator Started     ")
-    print("==========================================")
-    print(f"Simulation Mode: {SIMULATION_MODE.upper()}")
-    print(f"Target file: {CSV_PATH}")
-    print(f"Resuming from Event ID: {event_id}")
-    print(f"Initial Occupancy: {occupancy}")
-    print("Press Ctrl+C to stop simulation.\n")
+    print('Starting Queue Simulator...')
+    print('Mode:', SIMULATION_MODE)
+    print('Resuming event_id from:', event_id)
+    print('Resuming people_inside from:', people_inside)
+    print('Press Ctrl+C to stop.\n')
 
     try:
         while True:
-            now_full = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            now_time = datetime.now().strftime('%H:%M:%S')
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            display_time = datetime.now().strftime('%H:%M:%S')
 
-            event_type, occupancy, traffic = generate_event(occupancy)
+            event_type, people_inside, traffic = generate_event(people_inside)
 
-            write_event(event_id, now_full, event_type)
+            write_event(event_id, timestamp, event_type)
 
-            print(f"[{now_time}]")
-            print(f"Mode: {SIMULATION_MODE.capitalize()}")
-            print(f"Traffic: {traffic.capitalize()}")
-            print(f"Event: {event_type}")
-            print(f"Occupancy: {occupancy}")
-            print("-" * 25)
+            print(f'[{display_time}]')
+            print(f'Traffic: {traffic.capitalize()}')
+            print(f'Event: {event_type}')
+            print(f'People Inside: {people_inside}')
+            print('-' * 25)
 
-            delay = calculate_event_delay(traffic, SIMULATION_MODE)
+            delay = get_event_delay(traffic)
             time.sleep(delay)
 
             event_id += 1
 
     except KeyboardInterrupt:
-        print("\nSimulator stopped by user.")
+        print('\nSimulator stopped.')
 
 
 if __name__ == '__main__':
