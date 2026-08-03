@@ -1,0 +1,86 @@
+2026-08-03 12:29:47 | DEBUG | __main__ | Debug message test
+2026-08-03 12:29:47 | INFO | __main__ | Info message test
+2026-08-03 12:29:47 | WARNING | __main__ | Warning message test
+2026-08-03 12:29:47 | ERROR | __main__ | Error message test
+2026-08-03 12:29:47 | CRITICAL | __main__ | Critical message test
+2026-08-03 12:30:59 | INFO | logger | Logging initialized successfully.
+2026-08-03 12:30:59 | DEBUG | logger | Debug message test
+2026-08-03 12:30:59 | INFO | logger | Info message test
+2026-08-03 12:30:59 | WARNING | logger | Warning message test
+2026-08-03 12:30:59 | ERROR | logger | Error message test
+2026-08-03 12:30:59 | CRITICAL | logger | Critical message test
+2026-08-03 12:34:21 | INFO | logger | Logging initialized successfully.
+2026-08-03 12:34:21 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:21 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:24 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:24 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:27 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:27 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:30 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:30 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:33 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:33 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:36 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:36 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:39 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:39 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:42 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:42 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:45 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:45 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:48 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:48 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:51 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:51 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:54 | ERROR | serial_manager | Could not open COM7: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2026-08-03 12:34:54 | WARNING | main | Failed to connect to ESP32. Retrying in 3s...
+2026-08-03 12:34:59 | DEBUG | serial_manager | Discarded 13 startup lines
+2026-08-03 12:34:59 | INFO | serial_manager | Connected to ESP32 on COM7 @ 115200 baud
+2026-08-03 12:34:59 | INFO | main | Application Started
+2026-08-03 12:35:03 | INFO | logger | Logging initialized successfully.
+2026-08-03 12:35:05 | INFO | serial_manager | Connected to ESP32 on COM7 @ 115200 baud
+2026-08-03 12:35:05 | INFO | main | Application Started
+2026-08-03 12:35:08 | INFO | queue_manager | ONLINE — Device: ESP32, Firmware: 4.5
+2026-08-03 12:35:08 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 0 | Last Event: ONLINE
+2026-08-03 12:35:12 | INFO | queue_manager | EXIT — Queue: 0
+2026-08-03 12:35:12 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: EXIT
+2026-08-03 12:35:15 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:15 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:35:18 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:18 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:35:22 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:22 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:35:25 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:25 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:35:28 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:28 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:35:34 | INFO | queue_manager | ENTER — Queue: 1
+2026-08-03 12:35:34 | DEBUG | main | Current Queue: 1 | Entries: 1 | Exits: 1 | Last Event: ENTER
+2026-08-03 12:35:36 | INFO | queue_manager | EXIT — Queue: 0
+2026-08-03 12:35:36 | DEBUG | main | Current Queue: 0 | Entries: 1 | Exits: 2 | Last Event: EXIT
+2026-08-03 12:35:40 | INFO | queue_manager | TIMEOUT — Queue unchanged: 0
+2026-08-03 12:35:40 | DEBUG | main | Current Queue: 0 | Entries: 1 | Exits: 2 | Last Event: TIMEOUT
+2026-08-03 12:35:41 | INFO | queue_manager | ENTER — Queue: 1
+2026-08-03 12:35:41 | DEBUG | main | Current Queue: 1 | Entries: 2 | Exits: 2 | Last Event: ENTER
+2026-08-03 12:35:44 | INFO | queue_manager | TIMEOUT — Queue unchanged: 1
+2026-08-03 12:35:44 | DEBUG | main | Current Queue: 1 | Entries: 2 | Exits: 2 | Last Event: TIMEOUT
+2026-08-03 12:36:20 | INFO | queue_manager | TIMEOUT — Queue unchanged: 1
+2026-08-03 12:36:20 | DEBUG | main | Current Queue: 1 | Entries: 2 | Exits: 2 | Last Event: TIMEOUT
+2026-08-03 12:36:24 | INFO | main | Application shutting down...
+2026-08-03 12:36:24 | INFO | serial_manager | Disconnected from ESP32
+2026-08-03 12:36:28 | INFO | logger | Logging initialized successfully.
+2026-08-03 12:36:33 | INFO | logger | Logging initialized successfully.
+2026-08-03 12:36:36 | DEBUG | serial_manager | Discarded 2 startup lines
+2026-08-03 12:36:36 | INFO | serial_manager | Connected to ESP32 on COM7 @ 115200 baud
+2026-08-03 12:36:36 | INFO | main | Application Started
+2026-08-03 12:36:37 | INFO | queue_manager | ONLINE — Device: ESP32, Firmware: 4.5
+2026-08-03 12:36:37 | DEBUG | main | Current Queue: 0 | Entries: 0 | Exits: 0 | Last Event: ONLINE
+2026-08-03 12:36:43 | INFO | queue_manager | ENTER — Queue: 1
+2026-08-03 12:36:43 | DEBUG | main | Current Queue: 1 | Entries: 1 | Exits: 0 | Last Event: ENTER
+2026-08-03 12:36:49 | INFO | queue_manager | EXIT — Queue: 0
+2026-08-03 12:36:49 | DEBUG | main | Current Queue: 0 | Entries: 1 | Exits: 1 | Last Event: EXIT
+2026-08-03 12:36:57 | INFO | queue_manager | ENTER — Queue: 1
+2026-08-03 12:36:57 | DEBUG | main | Current Queue: 1 | Entries: 2 | Exits: 1 | Last Event: ENTER
+2026-08-03 12:37:00 | INFO | queue_manager | TIMEOUT — Queue unchanged: 1
+2026-08-03 12:37:00 | DEBUG | main | Current Queue: 1 | Entries: 2 | Exits: 1 | Last Event: TIMEOUT
+2026-08-03 12:37:10 | INFO | queue_manager | TIMEOUT — Queue unchanged: 1
