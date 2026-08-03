@@ -1,7 +1,6 @@
 #include "Adafruit_VL53L0X.h"
 #include <Wire.h>
 
-
 static const uint8_t PIN_XSHUT_A = 18;
 static const uint8_t PIN_XSHUT_B = 19;
 static const uint8_t PIN_SDA = 21;
