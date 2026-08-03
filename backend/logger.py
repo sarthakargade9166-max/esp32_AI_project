@@ -67,6 +67,11 @@ def setup_logger(level: int = logging.DEBUG) -> None:
             "Failed to initialize log file (%s). Falling back to console-only logging.", e
         )
 
+    # Silence noisy third-party HTTP loggers.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("hpack").setLevel(logging.WARNING)
+
     _logging_configured = True
     root_logger.info("Logging initialized successfully.")
 

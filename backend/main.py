@@ -1,8 +1,9 @@
 """
 main.py — Main orchestration entry point for the Smart Queue System.
 
-Coordinates SerialManager, EventParser, QueueManager, and logger modules.
-Does NOT handle business logic, database, or hardware directly.
+Coordinates SerialManager, EventParser, QueueManager, SupabaseClient,
+and logger modules.
+Does NOT handle business logic or hardware directly.
 """
 
 import logging
@@ -12,6 +13,7 @@ import serial
 from serial_manager import SerialManager
 from event_parser import EventParser
 from queue_manager import QueueManager
+from supabase_client import SupabaseClient
 from logger import setup_logger, get_logger
 
 RECONNECT_INTERVAL: int = 3
@@ -36,6 +38,7 @@ def main() -> None:
     sm: SerialManager = SerialManager()
     parser: EventParser = EventParser()
     queue: QueueManager = QueueManager()
+    db: SupabaseClient = SupabaseClient()
 
     ensure_connection(sm, logger)
     logger.info("Application Started")
@@ -52,7 +55,10 @@ def main() -> None:
                     continue
 
                 queue.process_event(event)
+                db.insert_event(event)
+
                 stats: dict = queue.get_statistics()
+                db.update_status(stats)
 
                 logger.debug(
                     "Current Queue: %d | Entries: %d | Exits: %d | Last Event: %s",
