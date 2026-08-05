@@ -1,119 +1,138 @@
-# Architecture
+# System Architecture
 
-This project is a smart queue monitoring system. It uses an ESP32 microcontroller with IR sensors to count how many people are standing in a queue, predicts how long someone would have to wait using a machine learning model, stores everything in a cloud database, and sends you a WhatsApp message when the queue is short enough.
+This project is an AI-based queue monitoring and wait-time prediction system. It uses an ESP32 microcontroller with VL53L0X Time-of-Flight sensors to track people entering and exiting a queue, records events in Supabase, predicts waiting time using a Random Forest model, and displays real-time status on a Streamlit dashboard.
 
-Here's how all the pieces connect.
+---
 
+## Data Flow Pipeline
 
-## How it works, end to end
+The end-to-end flow moves from physical sensors to cloud database and machine learning inference:
 
-The ESP32 sits at the queue location with two IR sensors — one at the entry, one at the exit. Every time someone walks in or out, it updates a counter. Every 30 seconds or so, it sends that count to Supabase (our cloud database) over Wi-Fi.
-
-On the backend, a Python script pulls data from the database, feeds it into a trained Random Forest model, and predicts how long the wait will be. If the prediction says the wait is under 5 minutes, it automatically sends a WhatsApp message through Twilio to let you know it's a good time to go.
-
-There's also a Streamlit dashboard where you can see the current queue status, today's analytics, and predictions for the best times to visit.
-
-
-## The main components
-
-**Hardware (the `hardware/` folder)**
-
-This is the ESP32 firmware. The Arduino sketch `esp_32_queue_counter.ino` handles reading the IR sensors, keeping a running count, connecting to Wi-Fi, and posting data to Supabase. The `config.h` file stores Wi-Fi credentials and the Supabase URL/key. There's also a `wiring.md` that explains how to connect the sensors to the ESP32.
-
-**Database (the `database/` folder)**
-
-We use Supabase, which is basically hosted PostgreSQL with a REST API built in. The `queue_data` table stores each reading — the queue count, the predicted wait time, and a timestamp. `supabase_client.py` is meant to be a reusable client module (still a placeholder for now), and `supabase_test.py` is a quick script to check that the connection works by inserting a test row.
-
-**ML Pipeline (the `ml/` folder)**
-
-The machine learning side is pretty straightforward. `train_model.py` reads historical data from `queue_data.csv`, trains a Random Forest Regressor using scikit-learn, and saves the model as `model.pkl`. The features it uses are: current queue count, average service time, hour of the day, and day of the week. The target is the actual wait time in minutes.
-
-After training, it runs a quick test prediction. If the predicted wait is under 5 minutes, it triggers a WhatsApp notification.
-
-`predict.py` is a placeholder — it's meant to be a standalone prediction module that loads the saved model for real-time use.
-
-**Notifications (the `notifications/` folder)**
-
-Just one file here: `twilio_msg.py`. It has a `send_whatsapp_message()` function that uses the Twilio API to send a WhatsApp message. The credentials come from the `.env` file. Right now the message text and recipient number are hardcoded.
-
-**Dashboard (`dashboard.py` at the root)**
-
-A Streamlit app with three pages you can switch between using the sidebar:
-
-- Live Dashboard — shows current queue count, service time, wait estimate, and today's entry/exit numbers
-- Today's Analytics — people served, peak hours, max queue size, averages
-- Predictions and Insights — busiest/least busy days, best times to visit, tomorrow's forecast
-
-All the values on the dashboard are currently static (hardcoded numbers). The plan is to connect it to live Supabase data and the ML model.
-
-There's also a `dashboard/` folder with `app.py` and `utils.py`, but those are empty placeholders for now.
-
-
-## Project structure
-
+```text
+ESP32 (Hardware & VL53L0X Sensors)
+        │
+        ▼  (USB Serial Line / JSON Output)
+SerialManager (backend/serial_manager.py)
+        │
+        ▼  (Raw JSON String)
+EventParser (backend/event_parser.py)
+        │
+        ▼  (Validated Event Dictionary)
+QueueManager (backend/queue_manager.py)
+        │
+        ▼  (Event Data & Updated State)
+Supabase Client (backend/supabase_client.py)
+        │
+        ▼  (Cloud Tables: queue_events & queue_status)
+Streamlit Dashboard (dashboard/app.py)
+        │
+        ▼  (Live Queue Status Dict)
+Feature Builder (ml/feature_builder.py)
+        │
+        ▼  (Formatted 5-Feature Vector)
+Queue Predictor (ml/predictor.py)
+        │
+        ▼  (Loaded model.pkl & scaler.pkl)
+Predicted Wait Time (Displayed on Dashboard)
 ```
+
+---
+
+## Folder Structure
+
+```text
 esp32_AI_project/
-├── .env                          # Twilio and Supabase credentials
-├── .gitignore                    # Keeps .env out of git
-├── README.md
-├── requirements.txt
-├── dashboard.py                  # Main Streamlit app
-│
-├── hardware/
-│   ├── esp_32_queue_counter.ino  # ESP32 Arduino firmware
-│   ├── config.h                  # Wi-Fi and API config
-│   └── wiring.md                 # How to wire the sensors
-│
-├── ml/
-│   ├── train_model.py            # Trains the model
-│   ├── predict.py                # Prediction module (placeholder)
-│   ├── model.pkl                 # Saved trained model
-│   └── queue_data.csv            # Training data
-│
-├── database/
-│   ├── schema.sql                # Table definitions
-│   ├── supabase_client.py        # Supabase client (placeholder)
-│   └── supabase_test.py          # Connection test
-│
-├── notifications/
-│   └── twilio_msg.py             # WhatsApp alerts via Twilio
-│
+├── .env                         # Environment variables (Supabase & Twilio credentials)
+├── .gitignore                   # Excludes .env, logs, pycache, models
+├── README.md                    # Project summary
+├── backend/
+│   ├── main.py                  # Backend orchestration entry point
+│   ├── serial_manager.py        # Serial communication handler with ESP32
+│   ├── event_parser.py          # JSON validation and event parser
+│   ├── queue_manager.py        # In-memory queue state tracker
+│   ├── supabase_client.py       # Supabase database client
+│   ├── logger.py                # Centralized logging setup
+│   └── config.py                # Serial COM port and baud rate configuration
 ├── dashboard/
-│   ├── app.py                    # (placeholder)
-│   └── utils.py                  # (placeholder)
-│
+│   ├── app.py                   # Streamlit dashboard UI (Dashboard & Developer pages)
+│   └── analytics.py             # Analytics engine (Peak queue, busy hours/days)
+├── ml/
+│   ├── train_model.py           # Model training pipeline
+│   ├── predictor.py             # Model inference module
+│   ├── feature_builder.py       # Feature vector builder for live predictions
+│   ├── test_model.py            # Deployment validation script
+│   ├── queue_data.csv           # Historical dataset (100,000 clean rows)
+│   └── models/
+│       ├── model.pkl            # Trained RandomForestRegressor model
+│       └── scaler.pkl           # Trained StandardScaler
+├── notifications/
+│   └── twilio_msg.py            # WhatsApp alert module using Twilio
+├── Firmware/
+│   ├── queue_counter_firmware.ino # ESP32 Arduino firmware
+│   ├── config.h                 # Sensor threshold configuration
+│   └── wiring.md                # Circuit connections and pin layout
 └── docs/
-    ├── architecture.md           # This file
-    ├── deployment.md             # Setup and deployment guide
-    └── api_reference.md          # API docs
+    ├── architecture.md          # Architecture overview
+    ├── api_reference.md         # API and class reference
+    └── deployment.md            # Setup and deployment instructions
 ```
 
+---
 
-## Tech stack
+## Module Responsibilities
 
-- **Hardware:** ESP32 with IR break-beam sensors, programmed via Arduino IDE
-- **Database:** Supabase (hosted PostgreSQL with auto-generated REST API)
-- **ML:** scikit-learn Random Forest, pandas and NumPy for data handling
-- **Notifications:** Twilio WhatsApp API, using their sandbox for development
-- **Dashboard:** Streamlit
-- **Secrets management:** python-dotenv, loading from a `.env` file
+### 1. Hardware & Firmware (`Firmware/`)
+The ESP32 reads distance measurements from two VL53L0X laser distance sensors placed at entry and exit points. When a person crosses a sensor threshold, the ESP32 determines directional movement (`ENTER` or `EXIT`), updates its local counter, and prints a JSON string to the USB serial interface.
 
+### 2. Serial Manager (`backend/serial_manager.py`)
+Connects to the ESP32 via PySerial using the configured COM port and baud rate. It reads incoming raw lines from the serial buffer, handles connection timeouts, and attempts automatic reconnection if the USB cable is unplugged.
 
-## Security notes
+### 3. Event Parser (`backend/event_parser.py`)
+Decodes incoming serial strings as JSON and checks that all expected fields (`timestamp`, `event`, `count`, `device`, `firmware`) are present with valid data types. Malformed or unrecognized lines are logged and safely ignored.
 
-API keys and tokens live in the `.env` file, which is excluded from git via `.gitignore`. The Supabase key used is the anonymous (anon) key, which is safe to use client-side as long as you have Row Level Security policies set up on your tables. Twilio credentials are loaded through environment variables at runtime.
+### 4. Queue Manager (`backend/queue_manager.py`)
+Maintains live state in memory. It tracks current queue count, total entries, total exits, system online status, and last event timestamp. It prevents negative queue counts.
 
-One thing to watch out for: the ESP32's `config.h` will contain your Wi-Fi password and Supabase key in plain text. Don't push that to a public repo.
+### 5. Supabase Client (`backend/supabase_client.py`)
+Persists data to Supabase PostgreSQL database tables:
+- `queue_events`: Appends a new row for every detected event (`ENTER`, `EXIT`, `ONLINE`, `TIMEOUT`).
+- `queue_status`: Upserts a single status row (`id=1`) with current queue size, entry/exit totals, device name, and timestamp.
 
+### 6. Machine Learning Module (`ml/`)
+- `train_model.py`: Cleans `queue_data.csv`, scales inputs using `StandardScaler`, splits data (64% train, 16% validation, 20% test), and trains a `RandomForestRegressor` (`n_estimators=200`, `max_depth=20`, `random_state=42`).
+- `feature_builder.py`: Extracts the 5 feature inputs (`queue_count`, `avg_service_time`, `active_counters`, `hour_of_day`, `day_of_week`) from a live `queue_status` dictionary.
+- `predictor.py`: Loads `model.pkl` and `scaler.pkl` once, transforms input vectors, and outputs predicted wait time in minutes.
 
-## What's next
+### 7. Dashboard (`dashboard/`)
+- `app.py`: Streamlit web dashboard with 2 navigation pages (`🏠 Dashboard` for end-user metrics, analytics, charts, and clean events; `🛠 Developer` for detailed device metrics, status table, logs, and system metadata).
+- `analytics.py`: Computes historical trends from Supabase event logs (Peak Queue Today, Average Wait Time, Busiest Hour of Day, Busiest Day of Week, Busiest Week of Month).
 
-Some things that still need to be built or improved:
+### 8. Notifications (`notifications/twilio_msg.py`)
+Provides a `send_whatsapp_message()` function to trigger WhatsApp alerts via Twilio API when specific queue thresholds or wait times are met.
 
-- Actually implement `predict.py` so the model can be used for real-time predictions
-- Connect the dashboard to live data from Supabase instead of hardcoded values
-- Build out the `dashboard/app.py` and `utils.py` modules
-- Add an OLED or LCD display on the ESP32 so people at the location can see the queue count
-- Support multiple queues with separate sensor pairs
-- Set up automatic model retraining with fresh data from the database
-- Deploy the dashboard somewhere accessible (Streamlit Cloud, a VPS, etc.)
+---
+
+## Database Design
+
+### `queue_events` Table
+Stores chronological event logs:
+- `id` (bigint, primary key)
+- `timestamp` (bigint)
+- `event` (text: ENTER, EXIT, ONLINE, TIMEOUT)
+- `queue_count` (integer)
+- `device` (text)
+- `firmware` (text)
+- `created_at` (timestamptz, auto default now())
+
+### `queue_status` Table
+Stores single-row real-time system state (`id=1`):
+- `id` (integer, primary key, value = 1)
+- `current_queue` (integer)
+- `total_entries` (integer)
+- `total_exits` (integer)
+- `status` (text: ONLINE, OFFLINE)
+- `last_event` (text)
+- `last_timestamp` (bigint)
+- `device` (text)
+- `firmware` (text)
+- `updated_at` (timestamptz)

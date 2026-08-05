@@ -1,144 +1,177 @@
 # API Reference
 
-This covers all the Python modules, the Supabase REST endpoints, and how the ESP32 communicates with the backend.
+This document covers the public methods, classes, parameters, return values, and exceptions for all backend, machine learning, analytics, and notification modules in the project.
 
+---
 
-## ML Pipeline
+## Backend Modules
 
-### train_model.py
+### 1. `backend/serial_manager.py`
 
-This is the main training script. When you run it, it:
+#### Class `SerialManager`
+Manages the PySerial USB connection to the ESP32 microcontroller.
 
-1. Reads `queue_data.csv` from the current directory
-2. Splits the data 80/20 for training and testing
-3. Trains a Random Forest model with 100 estimators
-4. Runs a test prediction with a hardcoded sample (queue count of 1, service time of 5 min, 11 AM on a Monday)
-5. If the predicted wait is under 5 minutes, it imports `twilio_msg` and sends a WhatsApp alert
+##### `__init__() -> None`
+Initializes port name and baud rate from `config.py`.
 
-```bash
-cd ml
-python train_model.py
-```
+##### `connect() -> bool`
+Opens the serial port.
+- **Returns:** `True` if connected successfully, `False` on error.
+- **Exceptions Caught:** `serial.SerialException`, `Exception`.
 
-The features used are `queue_count`, `avg_service_time`, `hour_of_day`, and `day_of_week`. The target variable is `actual_wait` (in minutes).
+##### `disconnect() -> None`
+Closes the active serial port safely.
 
-### predict.py
+##### `reconnect() -> None`
+Blocks and retries connecting every 3 seconds until reestablished.
 
-Not implemented yet. This is meant to be a standalone module that loads `model.pkl` and exposes a prediction function for real-time use. Something like:
+##### `is_connected() -> bool`
+Checks if serial port is open.
+- **Returns:** `True` if open, `False` otherwise.
 
-```python
-def predict_wait_time(queue_count, avg_service_time, hour_of_day, day_of_week):
-    # loads model.pkl and returns predicted wait in minutes
-```
+##### `read_line() -> Optional[str]`
+Reads one line from the serial buffer.
+- **Returns:** Cleaned string line or `None` on timeout/error.
+- **Exceptions Caught:** `serial.SerialException`, `UnicodeDecodeError`.
 
+---
 
-## Notifications
+### 2. `backend/event_parser.py`
 
-### twilio_msg.py
+#### Class `EventParser`
+Parses and validates raw JSON strings received over serial.
 
-Has one function:
+##### `parse(raw_line: str) -> Optional[Dict[str, Any]]`
+Decodes JSON and validates fields.
+- **Parameters:** `raw_line` (str): Raw string from serial.
+- **Returns:** Event dictionary or `None` if invalid.
+- **Expected Keys:** `timestamp` (int), `event` (str), `count` (int), `device` (str), `firmware` (str).
 
-**`send_whatsapp_message(wait_time)`**
+---
 
-Sends a WhatsApp message through Twilio saying the wait is under 5 minutes. The `wait_time` parameter is accepted but isn't actually included in the message body right now — the message text is hardcoded.
+### 3. `backend/queue_manager.py`
 
-It reads `twilio_acc_sid` and `twilio_auth_token` from the `.env` file using `python-dotenv`.
+#### Class `QueueManager`
+Tracks in-memory queue state and statistics.
 
-The sender is the Twilio sandbox number (`+14155238886`) and the recipient is hardcoded to `+917219699787`. To change the recipient, edit the `to` field in the function.
+##### `process_event(event: Optional[Dict[str, Any]]) -> None`
+Updates internal state based on validated event dictionary (`ENTER`, `EXIT`, `ONLINE`, `TIMEOUT`).
 
-```python
-from twilio_msg import send_whatsapp_message
-send_whatsapp_message(3.5)
-```
+##### `get_current_queue() -> int`
+Returns current queue count.
 
+##### `get_statistics() -> Dict[str, Any]`
+Returns state dictionary containing `current_queue`, `total_entries`, `total_exits`, `last_event`, `last_timestamp`, `device`, `firmware`, and `status`.
 
-## Database
+##### `reset() -> None`
+Resets all counters and status to default offline values.
 
-### supabase_test.py
+##### `set_online() -> None` / `set_offline() -> None`
+Updates status string to `ONLINE` or `OFFLINE`.
 
-A quick test script that connects to Supabase and inserts a sample row into the `queue_data` table. Uses a hardcoded URL and key (not from `.env`). Useful for checking that your Supabase project is reachable and the table exists.
+---
 
-```bash
-cd database
-python supabase_test.py
-```
+### 4. `backend/supabase_client.py`
 
-It inserts `{"queue_count": 15, "predicted_wait": 30}` and prints the response.
+#### Class `SupabaseClient`
+Handles database reads and writes to Supabase cloud PostgreSQL.
 
-### supabase_client.py
+##### `__init__() -> None`
+Loads environment credentials from `.env` and initializes `create_client`.
 
-Placeholder. Not implemented yet. This is meant to be a reusable module for reading and writing queue data from the rest of the codebase.
+##### `insert_event(event: Dict[str, Any]) -> bool`
+Inserts one event record into `queue_events`.
+- **Returns:** `True` on success, `False` on error.
 
+##### `update_status(status: Dict[str, Any]) -> bool`
+Upserts status statistics into single row (`id=1`) of `queue_status`.
+- **Returns:** `True` on success, `False` on error.
 
-## Supabase REST API
+##### `get_recent_events(limit: int = 20) -> List[Dict[str, Any]]`
+Queries `queue_events` ordered by timestamp descending.
 
-Supabase auto-generates a REST API for your tables. Here's how the project uses it.
+##### `get_current_status() -> Optional[Dict[str, Any]]`
+Fetches row `id=1` from `queue_status`.
 
-**Base URL:** `https://<your-project-id>.supabase.co/rest/v1/`
+##### `test_connection() -> bool`
+Performs test SELECT query on `queue_status`.
 
-**Headers you need on every request:**
+---
 
-```
-apikey: <your anon key>
-Authorization: Bearer <your anon key>
-Content-Type: application/json
-```
+### 5. `backend/logger.py`
 
-**To insert a new reading:**
+##### `setup_logger(level: int = logging.DEBUG) -> None`
+Configures root logger with console handler and rotating file handler (`logs/queue_system.log`).
 
-```
-POST /rest/v1/queue_data
+##### `get_logger(name: str) -> logging.Logger`
+Returns named logger instance.
 
-Body:
-{
-  "queue_count": 15,
-  "predicted_wait": 30.0
-}
-```
+---
 
-Returns the inserted row with its auto-generated `id` and `created_at` timestamp.
+### 6. `backend/main.py`
 
-**To fetch the latest readings:**
+##### `ensure_connection(sm: SerialManager, logger: logging.Logger) -> None`
+Retries serial connection until active.
 
-```
-GET /rest/v1/queue_data?order=created_at.desc&limit=10
-```
+##### `main() -> None`
+Main event loop reading serial lines, parsing events, updating state, and saving to Supabase.
 
-**To fetch readings from a specific day:**
+---
 
-```
-GET /rest/v1/queue_data?created_at=gte.2026-07-22T00:00:00Z&created_at=lt.2026-07-23T00:00:00Z&order=created_at.asc
-```
+## Machine Learning Modules
 
+### 1. `ml/predictor.py`
 
-## Dashboard
+#### Class `QueuePredictor`
+Loads trained model artifacts and computes predictions.
 
-### dashboard.py
+##### `__init__(model_path=None, scaler_path=None, auto_load=True) -> None`
+Resolves artifact paths and optionally calls `load_model()`.
 
-The main Streamlit app. Has three pages you switch between using the sidebar:
+##### `load_model() -> bool`
+Loads `model.pkl` and `scaler.pkl` using `joblib`.
+- **Returns:** `True` if model loaded successfully, `False` otherwise.
 
-**Live Dashboard** shows current queue (15), average service time (5 min), wait estimate (75 min), people entered (120), people exited (105), and alert status (Active).
+##### `predict(features) -> Optional[float]`
+Transforms feature vector and runs model prediction.
+- **Parameters:** `features`: DataFrame, numpy array, or list containing `[queue_count, avg_service_time, active_counters, hour_of_day, day_of_week]`.
+- **Returns:** Predicted wait time in minutes (float) or `None`.
 
-**Today's Analytics** shows people served (105), peak hour (11 AM to 1 PM), max queue (32), average wait (18 min), average service (5 min), and total visitors (120).
+---
 
-**Predictions & Insights** shows busiest day (Monday), least busy day (Thursday), best time to visit (2 PM to 4 PM), predicted crowd tomorrow (Medium), expected wait tomorrow (10-20 min), and a recommendation.
+### 2. `ml/feature_builder.py`
 
-All these values are hardcoded right now. They'll need to be connected to live data from Supabase and the ML model.
+##### `build_features(status: Optional[Dict[str, Any]]) -> pd.DataFrame`
+Converts `queue_status` dictionary into 1-row feature DataFrame with columns:
+`['queue_count', 'avg_service_time', 'active_counters', 'hour_of_day', 'day_of_week']`.
 
-### dashboard/app.py and dashboard/utils.py
+---
 
-Both are empty placeholders.
+### 3. `ml/train_model.py`
 
+##### `run_pipeline(csv_path: Path | None = None) -> None`
+Executes data cleaning, splitting, scaling, RandomForestRegressor training, evaluation (MAE, RMSE, R²), and artifact saving (`models/model.pkl`, `models/scaler.pkl`).
 
-## ESP32 HTTP Interface
+---
 
-The ESP32 firmware sends queue data to Supabase by making HTTP POST requests to the REST API.
+## Analytics Module
 
-It posts to:
-```
-POST https://<project>.supabase.co/rest/v1/queue_data
-```
+### `dashboard/analytics.py`
 
-With the standard Supabase headers (apikey, Authorization, Content-Type) and a JSON body containing `queue_count` and `predicted_wait`.
+##### `compute_queue_analytics(events, status=None, current_prediction=None) -> Dict[str, str]`
+Computes 5 queue metrics:
+- `peak_queue_today`
+- `avg_wait_time`
+- `busiest_hour`
+- `busiest_day`
+- `busiest_week`
+Returns string dictionary; falls back to `"Not enough data"` when logs are sparse.
 
-The reporting interval is set in `config.h` and defaults to every 30 seconds. If the request fails (401, 403, 5xx), the ESP32 logs the error to Serial and keeps retrying.
+---
+
+## Notification Module
+
+### `notifications/twilio_msg.py`
+
+##### `send_whatsapp_message(prediction: float) -> None`
+Initializes Twilio Client using `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` from `.env` and sends a WhatsApp message with predicted wait time.

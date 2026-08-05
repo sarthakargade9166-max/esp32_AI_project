@@ -1,1 +1,8 @@
 .env
+*.log
+backend/logs/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+*.pkl
