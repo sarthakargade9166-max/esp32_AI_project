@@ -428,8 +428,19 @@ def main() -> None:
     if client is None:
         st.error(
             "🚨 **Supabase Unavailable** — Cannot connect to database. "
-            "Ensure `SUPABASE_URL` and `SUPABASE_API_KEY` are set in `.env`."
+            "Please configure `SUPABASE_URL` and `SUPABASE_API_KEY` in Streamlit Cloud Secrets (or `.env` for local dev)."
         )
+        with st.expander("🔑 How to fix on Streamlit Cloud", expanded=True):
+            st.markdown(
+                "**For Streamlit Cloud deployment:**\n"
+                "1. Open your Streamlit Cloud app settings at **Manage app -> Settings -> Secrets**.\n"
+                "2. Add your secrets in TOML format:\n"
+                "```toml\n"
+                'SUPABASE_URL = "https://asbyinrlipuwfkcfpvag.supabase.co"\n'
+                'SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."\n'
+                "```\n"
+                "3. Click **Save** to re-connect automatically."
+            )
         return
 
     with st.spinner("Fetching data from Supabase…"):
