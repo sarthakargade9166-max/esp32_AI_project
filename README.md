@@ -1,10 +1,10 @@
-# 🚀 ESP32 AI Queue Monitoring & Wait-Time Prediction System
+#  ESP32 AI Queue Monitoring & Wait-Time Prediction System
 
 An end-to-end IoT and Machine Learning solution for real-time queue tracking and wait-time estimation. The system utilizes an **ESP32 microcontroller** with **VL53L0X Time-of-Flight (ToF) sensors** to detect physical entries and exits, streams event data to a **Python backend**, persists events in **Supabase PostgreSQL**, predicts waiting times using a **Random Forest Regressor**, displays live status on an interactive **Streamlit Dashboard**, and dispatches automated **WhatsApp notifications via Twilio**.
 
 ---
 
-## 📌 System Architecture
+##  System Architecture
 
 ```text
 ESP32 (Hardware & VL53L0X Sensors)
@@ -36,19 +36,19 @@ Predicted Wait Time (Displayed on Dashboard & Alerts via Twilio)
 
 ---
 
-## ✨ Features
+## Features
 
-- **⏱️ Hardware Sensing**: ESP32 microcontroller with dual VL53L0X sensors to count directional movement (`ENTER` / `EXIT`).
-- **🔌 Robust Serial Ingestion**: Python serial listener with auto-reconnection and JSON message validation.
-- **⚡ In-Memory Queue State**: Real-time counter management preventing negative values and handling timeouts.
-- **☁️ Cloud Persistence**: Supabase PostgreSQL database maintaining event logs (`queue_events`) and single-row system status (`queue_status`).
-- **🤖 AI/ML Wait-Time Inference**: Trained `RandomForestRegressor` predicting waiting times in minutes based on active counters, queue depth, service rates, hour of day, and day of week.
-- **📊 Interactive Streamlit Dashboard**: Multi-page dashboard with real-time queue metrics, analytics charts, and developer debugging tools.
-- **📱 WhatsApp Alerts**: Twilio integration for automated queue alerts and threshold warnings.
+- ** Hardware Sensing**: ESP32 microcontroller with dual VL53L0X sensors to count directional movement (`ENTER` / `EXIT`).
+- ** Robust Serial Ingestion**: Python serial listener with auto-reconnection and JSON message validation.
+- ** In-Memory Queue State**: Real-time counter management preventing negative values and handling timeouts.
+- ** Cloud Persistence**: Supabase PostgreSQL database maintaining event logs (`queue_events`) and single-row system status (`queue_status`).
+- ** AI/ML Wait-Time Inference**: Trained `RandomForestRegressor` predicting waiting times in minutes based on active counters, queue depth, service rates, hour of day, and day of week.
+- ** Interactive Streamlit Dashboard**: Multi-page dashboard with real-time queue metrics, analytics charts, and developer debugging tools.
+- ** WhatsApp Alerts**: Twilio integration for automated queue alerts and threshold warnings.
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 ```text
 esp32_AI_project/
@@ -89,7 +89,7 @@ esp32_AI_project/
 
 ---
 
-## 🛠️ Setup & Installation
+##  Setup & Installation
 
 ### 1. Prerequisites
 
@@ -143,7 +143,7 @@ BAUD_RATE=115200
 
 ---
 
-## 🏃 Quick Start & Usage
+##  Quick Start & Usage
 
 ### Step 1: Flash ESP32 Firmware
 1. Open `Firmware/queue_counter_firmware.ino` in Arduino IDE.
@@ -187,7 +187,7 @@ Navigate to `http://localhost:8501` in your browser.
 
 ---
 
-## 🗄️ Database Tables (Supabase)
+##  Database Tables (Supabase)
 
 ### 1. `queue_events` Table
 | Column | Type | Description |
@@ -216,6 +216,6 @@ Navigate to `http://localhost:8501` in your browser.
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the **MIT License**.
