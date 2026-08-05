@@ -152,12 +152,21 @@ def _get_supabase_client() -> Optional[Client]:
     key = os.getenv("SUPABASE_API_KEY") or os.getenv("SUPABASE_KEY")
 
     if not url or not key:
+        try:
+            if hasattr(st, "secrets"):
+                url = url or st.secrets.get("SUPABASE_URL")
+                key = key or st.secrets.get("SUPABASE_API_KEY") or st.secrets.get("SUPABASE_KEY")
+        except Exception:
+            pass
+
+    if not url or not key:
         return None
 
     try:
         return create_client(url, key)
     except Exception:
         return None
+
 
 
 # fetch
